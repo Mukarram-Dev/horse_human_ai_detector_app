@@ -1,4 +1,4 @@
-package com.example.first_ai_project
+package com.example.ai_image_classifier
 
 import io.flutter.embedding.android.FlutterActivity
 

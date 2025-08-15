@@ -1,68 +1,50 @@
 import 'dart:io';
 
-import 'package:first_ai_project/interpreter_services.dart';
+import 'package:ai_image_classifier/interpreter_services.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:image_picker/image_picker.dart';
 
-class ImagePickerScreen extends StatefulWidget {
+class ImagePickerScreen extends HookWidget {
   const ImagePickerScreen({super.key});
 
   @override
-  State<ImagePickerScreen> createState() => _ImagePickerScreenState();
-}
-
-class _ImagePickerScreenState extends State<ImagePickerScreen> {
-  List<dynamic>? _outputs;
-  File? _image;
-  bool _loading = false;
-  final InterpreterServices _interpreterServices =
-      InterpreterServices(); // Create a single instance
-
-  @override
-  void initState() {
-    super.initState();
-    _loadModel();
-  }
-
-  Future<void> _loadModel() async {
-    setState(() {
-      _loading = true;
-    });
-
-    await _interpreterServices.loadModel(); // Load the model only once
-    setState(() {
-      _loading = false;
-    });
-  }
-
-  Future<void> pickImage() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile == null) return;
-
-    setState(() {
-      _loading = true;
-      _image = File(pickedFile.path);
-    });
-
-    _interpreterServices.classifyImage(
-      _image!,
-      (result) {
-        setState(() {
-          _loading = false;
-          _outputs = result;
-        });
-      },
-      () {
-        setState(() {
-          _loading = false;
-        });
-      },
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final outputs = useState<List<dynamic>?>(null);
+    final image = useState<File?>(null);
+    final loading = useState<bool>(false);
+    final interpreterServices = useMemoized(() => InterpreterServices());
+
+    useEffect(() {
+      () async {
+        await interpreterServices.loadModel();
+      }();
+      return null;
+    }, []);
+
+    Future<void> pickImage() async {
+      final pickedFile =
+          await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (pickedFile == null) return;
+
+      image.value = null;
+      loading.value = true;
+      image.value = File(pickedFile.path);
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      await interpreterServices.classifyImage(
+        image.value!,
+        (result) {
+          loading.value = false;
+          outputs.value = result;
+        },
+        () {
+          loading.value = false;
+        },
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.purple,
@@ -75,11 +57,25 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
           ),
         ),
       ),
-      body: _loading
+      body: loading.value
           ? const Center(
-              child: CircularProgressIndicator(
-              color: Colors.purple,
-            ))
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  spacing: 20,
+                  children: [
+                    Text(
+                      'Image Classifying...',
+                    ),
+                    CircularProgressIndicator(
+                      color: Colors.purple,
+                    ),
+                  ],
+                ),
+              ),
+            )
           : Padding(
               padding: const EdgeInsets.all(16),
               child: SizedBox(
@@ -88,22 +84,22 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _image == null
+                    image.value == null
                         ? Container()
                         : ClipRRect(
-                            borderRadius: BorderRadiusGeometry.circular(20),
+                            borderRadius: BorderRadius.circular(20),
                             child: SizedBox(
                               height: 450,
                               width: MediaQuery.of(context).size.width,
                               child: Image.file(
-                                _image!,
+                                image.value!,
                               ),
                             ),
                           ),
                     const SizedBox(height: 20),
-                    _outputs != null
+                    outputs.value != null
                         ? Text(
-                            "${_outputs![0]}",
+                            "${outputs.value![0]}",
                             style: const TextStyle(
                               color: Colors.black,
                               fontSize: 20.0,

@@ -16,8 +16,10 @@ class InterpreterServices {
     try {
       final interpreterOptions = InterpreterOptions();
 
-      _interpreter =
-          await Interpreter.fromAsset(_modelPath, options: interpreterOptions);
+      _interpreter = await Interpreter.fromAsset(
+        _modelPath,
+        options: interpreterOptions,
+      );
       await _loadLabels();
     } catch (e) {
       debugPrint("Error loading model: $e");
@@ -81,16 +83,16 @@ class InterpreterServices {
   }
 
   List<dynamic> _postprocess(List<List<double>> output) {
+    debugPrint("Raw output: $output");
     final scores = output[0];
     final maxScore = scores.reduce((a, b) => a > b ? a : b);
     final maxIndex = scores.indexOf(maxScore);
     final predictedLabel = labels[maxIndex];
 
-    if (predictedLabel.toLowerCase() == "horse" ||
-        predictedLabel.toLowerCase() == "human") {
-      return [predictedLabel, maxScore];
-    } else {
+    if (output[0][0] >= 0.60 && output[0][1] >= 0.30) {
       return ["Unknown", maxScore];
+    } else {
+      return [predictedLabel, maxScore];
     }
   }
 

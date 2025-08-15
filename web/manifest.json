@@ -1,6 +1,6 @@
 {
-    "name": "first_ai_project",
-    "short_name": "first_ai_project",
+    "name": "ai_image_classifier",
+    "short_name": "ai_image_classifier",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

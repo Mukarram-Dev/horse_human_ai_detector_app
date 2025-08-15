@@ -1,4 +1,4 @@
-# first_ai_project
+# ai_image_classifier
 
 A new Flutter project.
 
